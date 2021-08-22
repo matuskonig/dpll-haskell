@@ -1,7 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -Wall #-}
 
-module DPLL where
+module DPLL (dpll, Literal, Clause, Formula, Assignment) where
 
 import Data.Maybe (isJust, mapMaybe)
 import Data.Set (fromList, toList)

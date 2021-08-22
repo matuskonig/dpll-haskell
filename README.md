@@ -20,13 +20,18 @@ Setting output directory is recommended, also it is recommended to use the O3 op
 In every case, the program receives a CNF formula and it find a model (if exists), which satisfies the formula.
 The variables (literals) are represented as integers, positive interer represents positive variable and vice versa.
 
-For example, input `(x_1 or not x_2) and (not x_1 or x_2)` can be represented as 
+For example, input `(x1 or not x2) and (not x1 or x2)` can be represented as 
 
 ```
 1 -2
 -1 2
 ```
-The model found is 2, 1, which stands for $x_1 = True$, $x_2 = True$
+The model found is 2, 1, which stands for 
+
+```
+x1 = True
+x2 = True
+ ```
 
 The program has 2 way of use: 
 1.  The program can be used as a standalone application. Formula in CNF is passed to `stdin`, every clause is put in the new line, 

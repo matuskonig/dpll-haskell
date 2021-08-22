@@ -1,4 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# OPTIONS_GHC -Wall #-}
 
 import DPLL (Assignment, Clause, dpll)
 import Data.List (intercalate)

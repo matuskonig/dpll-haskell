@@ -24,7 +24,7 @@ uniq list = toList $ fromList list
 containsEmptyClause :: Formula -> Bool
 containsEmptyClause = any isEmpty
 
-findPureSymbol :: (Ord a, Foldable t, Num a) => t [a] -> Maybe a
+findPureSymbol :: Formula -> Maybe Literal
 findPureSymbol formula = case pureSymbols of
   [] -> Nothing
   (a : _) -> Just a
@@ -33,18 +33,22 @@ findPureSymbol formula = case pureSymbols of
     negativeLiteralNotPresent x = (- x) `notElem` symbolUnion
     pureSymbols = filter negativeLiteralNotPresent symbolUnion
 
-findUnitClauseSymbol :: [[a]] -> Maybe a
+findUnitClauseSymbol :: Formula -> Maybe Literal
 findUnitClauseSymbol = foldr step Nothing
   where
     step [a] _ = Just a
     step _ acc = acc
 
-setSymbolInFormula :: (Eq a, Num a) => a -> [[a]] -> [[a]]
+setSymbolInFormula :: Literal -> Formula -> Formula
 setSymbolInFormula symbol = mapMaybe mapFn
   where
     mapFn clause
       | symbol `elem` clause = Nothing
       | otherwise = Just $ filter (/= - symbol) clause
+
+firstSymbol :: [[a]] -> Maybe a
+firstSymbol ((x : _) : _) = Just x
+firstSymbol _ = Nothing
 
 dpll' :: (Assignment -> Formula -> Maybe Assignment)
 dpll' assignment [] = Just assignment
@@ -56,10 +60,6 @@ dpll' assignment formula = case (containsEmptyClause formula, pureSymbol, unitCl
   where
     pureSymbol = findPureSymbol formula
     unitClauseSymbol = findUnitClauseSymbol formula
-
-firstSymbol :: [[a]] -> Maybe a
-firstSymbol ((x : _) : _) = Just x
-firstSymbol _ = Nothing
 
 dpllBacktrack' :: Assignment -> Formula -> Maybe Assignment
 dpllBacktrack' assignment formula = do

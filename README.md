@@ -20,7 +20,7 @@ Setting output directory is recommended, also it is recommended to use the O3 op
 In every case, the program receives a CNF formula and it find a model (if exists), which satisfies the formula.
 The variables (literals) are represented as integers, positive interer represents positive variable and vice versa.
 
-For example, input $(x_1 \vee \neg x_2) \wedge (\neg x_1 \vee x_2)$ can be represented as 
+For example, input `(x_1 or not x_2) and (not x_1 or x_2)` can be represented as 
 
 ```
 1 -2

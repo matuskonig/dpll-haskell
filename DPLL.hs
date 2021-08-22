@@ -6,68 +6,105 @@ module DPLL (dpll, Literal, Clause, Formula, Assignment) where
 import Data.Maybe (isJust, mapMaybe)
 import Data.Set (fromList, toList)
 
+{- Represents a single variable, whose value can be either true or false -}
 type Literal = Integer
 
+{- Represents a disjunction of literals -}
 type Clause = [Integer]
 
+{- Represents a conjuction of clauses -}
 type Formula = [Clause]
 
+{- Represents a model, where positive literals have assigned truthy value and negative literals vice versa -}
 type Assignment = [Literal]
 
+{- For the list given, returns whether it is empty -}
 isEmpty :: [a] -> Bool
 isEmpty [] = True
 isEmpty _ = False
 
-uniq :: Ord a => [a] -> [a]
-uniq list = toList $ fromList list
+{- Returns the first element of the list if the list is not empty -}
+first :: [a] -> Maybe a
+first [] = Nothing
+first (x : _) = Just x
 
+{- Returns the first symbol of the formula (which has unassigned value) -}
+firstSymbol :: Formula -> Maybe Literal
+firstSymbol formula = do
+  a <- first formula
+  first a
+
+{- Make the list contain only unique values, removing all repetitions -}
+uniq :: Ord a => [a] -> [a]
+uniq = toList . fromList
+
+{- Returns whether the formula contains empty clause, in which case the formula contains contradiction
+and as a result is is unsatisfiable -}
 containsEmptyClause :: Formula -> Bool
 containsEmptyClause = any isEmpty
 
-findPureSymbol :: Formula -> Maybe Literal
-findPureSymbol formula = case pureSymbols of
-  [] -> Nothing
-  (a : _) -> Just a
+{- Returns pure literal from the formula (if it exits). Pure literal is a literal,
+  which has same sign across all clauses. If it exists, it can be safely assigned value
+  and clauses containing it can be removed. -}
+findPureLiteral :: Formula -> Maybe Literal
+findPureLiteral formula = first pureLiteral
   where
-    symbolUnion = uniq $ concat formula
-    negativeLiteralNotPresent x = (- x) `notElem` symbolUnion
-    pureSymbols = filter negativeLiteralNotPresent symbolUnion
+    allFormulaLiterals = uniq $ concat formula
+    negativeLiteralNotPresent x = (- x) `notElem` allFormulaLiterals
+    pureLiteral = filter negativeLiteralNotPresent allFormulaLiterals
 
-findUnitClauseSymbol :: Formula -> Maybe Literal
-findUnitClauseSymbol = foldr step Nothing
+{- Returns a literal, which is in an unit clause.
+  Unit clause is a clause containing just single literal, which value can be set safely. -}
+findUnitClauseLiteral :: Formula -> Maybe Literal
+findUnitClauseLiteral = foldr step Nothing
   where
     step [a] _ = Just a
     step _ acc = acc
 
-setSymbolInFormula :: Literal -> Formula -> Formula
-setSymbolInFormula symbol = mapMaybe mapFn
+{- Returns a formula with assigned value to literal. If a literal in in clause with the same sign,
+  the whole clause can be removed from the formula, otherwise just the literal -}
+assignLiteralValue :: Literal -> Formula -> Formula
+assignLiteralValue literal = mapMaybe mapClause
   where
-    mapFn clause
-      | symbol `elem` clause = Nothing
-      | otherwise = Just $ filter (/= - symbol) clause
+    mapClause clause
+      | literal `elem` clause = Nothing
+      | otherwise = Just $ filter (/= - literal) clause
 
-firstSymbol :: [[a]] -> Maybe a
-firstSymbol ((x : _) : _) = Just x
-firstSymbol _ = Nothing
-
+{- Main DPLL algorithm, finding a solution for the instance of the SAT problem -}
 dpll' :: (Assignment -> Formula -> Maybe Assignment)
-dpll' assignment [] = Just assignment
-dpll' assignment formula = case (containsEmptyClause formula, pureSymbol, unitClauseSymbol) of
-  (True, _, _) -> Nothing
-  (_, Just symbol, _) -> dpll' (symbol : assignment) (setSymbolInFormula symbol formula)
-  (_, _, Just symbol) -> dpll' (symbol : assignment) (setSymbolInFormula symbol formula)
-  (_, _, _) -> dpllBacktrack' assignment formula
-  where
-    pureSymbol = findPureSymbol formula
-    unitClauseSymbol = findUnitClauseSymbol formula
+dpll' assignment formula
+  {- Base cases -}
 
+  {- If the formula is empty, then all the clauses are satisfied and the solution is found -}
+  | isEmpty formula = Just assignment
+  {- If the formula contains the empty clause, it contains a contradiction and thus is unsatisfiable -}
+  | containsEmptyClause formula = Nothing
+  {- Heuristic shortcuts -}
+  {- If the formula contains pure literal, this literal can be assigned
+    a value safely without the loss of generality, clauses which will be satisfied by this literal can be removed
+    and literals of the negated value can be removed -}
+  | isJust pureLiteral =
+    let Just symbol = pureLiteral
+     in dpll' (symbol : assignment) (assignLiteralValue symbol formula)
+  {- If the formula contains unit clause, it can be satisfied only in one way and we can assign a value to a literal -}
+  | isJust unitClauseLiteral =
+    let Just symbol = unitClauseLiteral
+     in dpll' (symbol : assignment) (assignLiteralValue symbol formula)
+  {- We are performing a backtracking operation, where we assign true and false value to a literal -}
+  | otherwise = dpllBacktrack' assignment formula
+  where
+    pureLiteral = findPureLiteral formula
+    unitClauseLiteral = findUnitClauseLiteral formula
+
+{- Backtracking part of the DPLL algorithm, where we calculate the result
+  for assigning true and false value to a literal -}
 dpllBacktrack' :: Assignment -> Formula -> Maybe Assignment
 dpllBacktrack' assignment formula = do
   symbol <- firstSymbol formula
-  let positiveSymbolResult = dpll' (symbol : assignment) (setSymbolInFormula symbol formula)
-  let negativeSymbolResult = dpll' ((- symbol) : assignment) (setSymbolInFormula (- symbol) formula)
-  let returnValue = if isJust positiveSymbolResult then positiveSymbolResult else negativeSymbolResult
-  returnValue
+  let literalResult = dpll' (symbol : assignment) (assignLiteralValue symbol formula)
+  let negatedLiteralResult = dpll' ((- symbol) : assignment) (assignLiteralValue (- symbol) formula)
+  if isJust literalResult then literalResult else negatedLiteralResult
 
+{- Exported member, providing only the place for the formula assignment -}
 dpll :: Formula -> Maybe Assignment
 dpll = dpll' []

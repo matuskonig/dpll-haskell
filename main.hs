@@ -4,18 +4,23 @@
 import DPLL (Assignment, Clause, dpll)
 import Data.List (intercalate)
 
+noModelFoundMessage :: String
+noModelFoundMessage = "No model exists"
+
 main :: IO ()
 main = do
   content <- getContents
-  let contentLines = lines content
-  let model = dpll $ map convertLine contentLines
+  let model = dpll $ map convertLine $ lines content
   putStrLn $ modelToString model
   where
+    {- If the model is found, return a string concatenating the model literals,
+      else return errr message  -}
     modelToString :: (Maybe Assignment -> String)
-    modelToString Nothing = "No model exists"
+    modelToString Nothing = noModelFoundMessage
     modelToString (Just assignment) =
       "Found model: "
         ++ intercalate ", " (map show assignment)
 
-    convertLine :: String -> Clause
+    {- Converts single input line into clause -}
+    convertLine :: (String -> Clause)
     convertLine = map read . words

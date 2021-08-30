@@ -3,6 +3,7 @@
 
 module DPLL (dpll, Literal, Clause, Formula, Assignment) where
 
+import qualified Control.Applicative
 import Data.Maybe (isJust, mapMaybe)
 import qualified Data.Set as Set
 
@@ -98,7 +99,11 @@ dpllBacktrack' assignment formula = do
   symbol <- firstSymbol formula
   let literalResult = dpll' (symbol : assignment) (assignLiteralValue symbol formula)
   let negatedLiteralResult = dpll' ((- symbol) : assignment) (assignLiteralValue (- symbol) formula)
-  if isJust literalResult then literalResult else negatedLiteralResult
+  literalResult Control.Applicative.<|> negatedLiteralResult
+
+{-   case literalResult of
+    Just result -> Just result
+    Nothing -> negatedLiteralResult -}
 
 {- Exported member, providing only the place for the formula assignment -}
 dpll :: Formula -> Maybe Assignment

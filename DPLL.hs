@@ -19,29 +19,29 @@ type Formula = [Clause]
 type Assignment = [Literal]
 
 {- Returns the first element of the list if the list is not empty -}
-first :: ([a] -> Maybe a)
+first :: [a] -> Maybe a
 first [] = Nothing
 first (x : _) = Just x
 
 {- Returns the first symbol of the formula (which has unassigned value) -}
-firstSymbol :: (Formula -> Maybe Literal)
+firstSymbol :: Formula -> Maybe Literal
 firstSymbol formula = do
   a <- first formula
   first a
 
 {- Make the list contain only unique values, removing all repetitions -}
-uniq :: (Ord a => [a] -> [a])
+uniq :: Ord a => [a] -> [a]
 uniq = Set.toList . Set.fromList
 
 {- Returns whether the formula contains empty clause, in which case the formula contains contradiction
 and as a result is is unsatisfiable -}
-containsEmptyClause :: (Formula -> Bool)
+containsEmptyClause :: Formula -> Bool
 containsEmptyClause = any null
 
 {- Returns pure literal from the formula (if it exits). Pure literal is a literal,
   which has same sign across all clauses. If it exists, it can be safely assigned value
   and clauses containing it can be removed. -}
-findPureLiteral :: (Formula -> Maybe Literal)
+findPureLiteral :: Formula -> Maybe Literal
 findPureLiteral formula = first pureLiteral
   where
     allFormulaLiterals = uniq $ concat formula
@@ -50,7 +50,7 @@ findPureLiteral formula = first pureLiteral
 
 {- Returns a literal, which is in an unit clause.
   Unit clause is a clause containing just single literal, which value can be set safely. -}
-findUnitClauseLiteral :: (Formula -> Maybe Literal)
+findUnitClauseLiteral :: Formula -> Maybe Literal
 findUnitClauseLiteral = foldr step Nothing
   where
     step [a] _ = Just a
@@ -58,7 +58,7 @@ findUnitClauseLiteral = foldr step Nothing
 
 {- Returns a formula with assigned value to literal. If a literal in in clause with the same sign,
   the whole clause can be removed from the formula, otherwise just the literal -}
-assignLiteralValue :: (Literal -> Formula -> Formula)
+assignLiteralValue :: Literal -> Formula -> Formula
 assignLiteralValue literal = mapMaybe mapClause
   where
     mapClause clause
@@ -66,7 +66,7 @@ assignLiteralValue literal = mapMaybe mapClause
       | otherwise = Just $ filter (/= - literal) clause
 
 {- Main DPLL algorithm, finding a solution for the instance of the SAT problem -}
-dpll' :: (Assignment -> Formula -> Maybe Assignment)
+dpll' :: Assignment -> Formula -> Maybe Assignment
 dpll' assignment formula
   {- Base cases -}
 
@@ -93,7 +93,7 @@ dpll' assignment formula
 
 {- Backtracking part of the DPLL algorithm, where we calculate the result
   for assigning true and false value to a literal -}
-dpllBacktrack' :: (Assignment -> Formula -> Maybe Assignment)
+dpllBacktrack' :: Assignment -> Formula -> Maybe Assignment
 dpllBacktrack' assignment formula = do
   symbol <- firstSymbol formula
   let literalResult = dpll' (symbol : assignment) (assignLiteralValue symbol formula)
@@ -101,5 +101,5 @@ dpllBacktrack' assignment formula = do
   if isJust literalResult then literalResult else negatedLiteralResult
 
 {- Exported member, providing only the place for the formula assignment -}
-dpll :: (Formula -> Maybe Assignment)
+dpll :: Formula -> Maybe Assignment
 dpll = dpll' []

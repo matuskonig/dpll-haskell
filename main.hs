@@ -15,12 +15,12 @@ main = do
   where
     {- If the model is found, return a string concatenating the model literals,
       else return errr message  -}
-    modelToString :: (Maybe Assignment -> String)
+    modelToString :: Maybe Assignment -> String
     modelToString Nothing = noModelFoundMessage
     modelToString (Just assignment) =
       "Found model: "
         ++ intercalate ", " (map show assignment)
 
     {- Converts single input line into clause -}
-    convertLine :: (String -> Clause)
+    convertLine :: String -> Clause
     convertLine = map read . words

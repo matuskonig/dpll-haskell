@@ -4,7 +4,7 @@
 module DPLL (dpll, Literal, Clause, Formula, Assignment) where
 
 import Data.Maybe (isJust, mapMaybe)
-import Data.Set (fromList, toList)
+import qualified Data.Set as Set
 
 {- Represents a single variable, whose value can be either true or false -}
 type Literal = Integer
@@ -17,11 +17,6 @@ type Formula = [Clause]
 
 {- Represents a model, where positive literals have assigned truthy value and negative literals vice versa -}
 type Assignment = [Literal]
-
-{- For the list given, returns whether it is empty -}
-isEmpty :: ([a] -> Bool)
-isEmpty [] = True
-isEmpty _ = False
 
 {- Returns the first element of the list if the list is not empty -}
 first :: ([a] -> Maybe a)
@@ -36,12 +31,12 @@ firstSymbol formula = do
 
 {- Make the list contain only unique values, removing all repetitions -}
 uniq :: (Ord a => [a] -> [a])
-uniq = toList . fromList
+uniq = Set.toList . Set.fromList
 
 {- Returns whether the formula contains empty clause, in which case the formula contains contradiction
 and as a result is is unsatisfiable -}
 containsEmptyClause :: (Formula -> Bool)
-containsEmptyClause = any isEmpty
+containsEmptyClause = any null
 
 {- Returns pure literal from the formula (if it exits). Pure literal is a literal,
   which has same sign across all clauses. If it exists, it can be safely assigned value
@@ -76,7 +71,7 @@ dpll' assignment formula
   {- Base cases -}
 
   {- If the formula is empty, then all the clauses are satisfied and the solution is found -}
-  | isEmpty formula = Just assignment
+  | null formula = Just assignment
   {- If the formula contains the empty clause, it contains a contradiction and thus is unsatisfiable -}
   | containsEmptyClause formula = Nothing
   {- Heuristic shortcuts -}
